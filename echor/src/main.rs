@@ -22,5 +22,17 @@ fn main() {
         )
         .get_matches();
 
-    println!("{:?}", matches);
+    let texts = matches
+        .get_many::<String>("text")
+        .unwrap_or_default()
+        .cloned()
+        .collect::<Vec<_>>();
+    let omit_newline = matches.get_flag("omit_newline");
+
+    let all_texts = texts.join(" ");
+    print!("{}", all_texts);
+
+    if !omit_newline {
+        println!();
+    }
 }
