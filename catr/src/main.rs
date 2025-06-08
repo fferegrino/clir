@@ -1,7 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
-use std::fs::File;
-use std::io::{self, BufRead, BufReader};
+use std::io::BufRead;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -16,7 +15,7 @@ struct Args {
 
 fn run(args: Args) -> Result<()> {
     for filename in args.files {
-        let file = open(&filename);
+        let file = clir::open(&filename);
         if let Err(err) = file {
             eprintln!("Failed to open {filename}: {err}");
             continue;
@@ -48,13 +47,6 @@ fn run(args: Args) -> Result<()> {
         }
     }
     Ok(())
-}
-
-fn open(filename: &str) -> Result<Box<dyn BufRead>> {
-    match filename {
-        "-" => Ok(Box::new(BufReader::new(io::stdin()))),
-        _ => Ok(Box::new(BufReader::new(File::open(filename)?))),
-    }
 }
 
 fn main() {
