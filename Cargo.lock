@@ -516,6 +516,7 @@ dependencies = [
  "anyhow",
  "assert_cmd",
  "clap",
+ "clir",
  "predicates",
  "pretty_assertions",
  "rand",
