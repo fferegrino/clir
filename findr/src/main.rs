@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::{Parser, ValueEnum};
 use regex::Regex;
-use walkdir::WalkDir;
+use walkdir::{DirEntry, WalkDir};
 
 #[derive(Parser, Debug)]
 #[command(about, author, version, long_about = None)]
@@ -52,33 +52,39 @@ impl ValueEnum for EntryType {
 }
 
 fn run(args: Args) -> Result<()> {
-    for path in args.paths {
-        for entry in WalkDir::new(path) {
-            match entry {
-                Ok(entry) => {
-                    let match_type = args.entry_types.is_empty()
-                        || ((entry.file_type().is_dir()
-                            && args.entry_types.contains(&EntryType::Dir))
-                            || (entry.file_type().is_file()
-                                && args.entry_types.contains(&EntryType::File))
-                            || (entry.file_type().is_symlink()
-                                && args.entry_types.contains(&EntryType::Link)));
+    let type_match = |entry: &DirEntry| {
+        args.entry_types.is_empty()
+            || ((entry.file_type().is_dir() && args.entry_types.contains(&EntryType::Dir))
+                || (entry.file_type().is_file() && args.entry_types.contains(&EntryType::File))
+                || (entry.file_type().is_symlink() && args.entry_types.contains(&EntryType::Link)))
+    };
 
-                    let name_match = args.names.is_empty()
-                        || args.names.iter().any(|name_regex| {
-                            name_regex.is_match(entry.file_name().to_str().unwrap())
-                        });
+    let name_match = |entry: &DirEntry| {
+        args.names.is_empty()
+            || args
+                .names
+                .iter()
+                .any(|name_regex| name_regex.is_match(entry.file_name().to_str().unwrap()))
+    };
 
-                    if match_type && name_match {
-                        println!("{}", entry.path().display())
-                    }
-                }
-                Err(error) => {
-                    eprintln!("{error}");
-                }
+    let entries: Vec<String> = args
+        .paths
+        .iter()
+        .flat_map(|path| WalkDir::new(path))
+        .into_iter()
+        .filter_map(|entry| match entry {
+            Err(e) => {
+                eprintln!("{e}");
+                None
             }
-        }
-    }
+            Ok(entry) => Some(entry),
+        })
+        .filter(type_match)
+        .filter(name_match)
+        .map(|entry| entry.path().display().to_string())
+        .collect();
+
+    println!("{}", entries.join("\n"));
     Ok(())
 }
 
