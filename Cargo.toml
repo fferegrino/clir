@@ -2,6 +2,6 @@
 resolver = "3"
 members = [
     "catr",
-    "clir", "findr",
+    "clir", "cutr", "findr",
     "headr", "uniqr", "wcr",
 ]
