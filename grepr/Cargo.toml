@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.98"
-clap = "4.5.40"
+clap = { version = "4.5.40", features = ["derive"] }
 clir = { path = "../clir" }
 regex = "1.11.1"
 sys-info = "0.9.1"
