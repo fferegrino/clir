@@ -39,46 +39,54 @@ fn get_month(possible_month: Option<String>, current_month: u32) -> u32 {
             let month_as_number = month.parse::<u32>();
             match month_as_number {
                 Ok(month) => month,
-                Err(_) => {
-                    match month.to_lowercase().as_str() {
-                        "january" => 1,
-                        "february" => 2,
-                        "march" => 3,
-                        "april" => 4,
-                        "may" => 5,
-                        "june" => 6,
-                        "july" => 7,
-                        "august" => 8,
-                        "september" => 9,
-                        "october" => 10,
-                        "november" => 11,
-                        "december" => 12,
-                        _ => current_month,
-                    }
-                }
+                Err(_) => match month.to_lowercase().as_str() {
+                    "january" => 1,
+                    "february" => 2,
+                    "march" => 3,
+                    "april" => 4,
+                    "may" => 5,
+                    "june" => 6,
+                    "july" => 7,
+                    "august" => 8,
+                    "september" => 9,
+                    "october" => 10,
+                    "november" => 11,
+                    "december" => 12,
+                    _ => current_month,
+                },
             }
         }
         None => current_month,
     }
 }
 
-struct WkDay {
-    day_in_week: i64,
-    day: i64,
+fn day_headers(end_line: bool) {
+    if end_line {
+        println!("Su Mo Tu We Th Fr Sa  ");
+    } else {
+        print!("Su Mo Tu We Th Fr Sa  ");
+    }
 }
 
-fn run(args: Args) -> Result<()> {
-    let current_year = Local::now().year();
-    let current_month = Local::now().month();
-    let current_day = Local::now().day();
-
-    let year = if args.year == 0 {
-        current_year
+fn add_day_to_vec(vec: &mut Vec<String>, weekday: WkDay) {
+    if vec.is_empty() {
+        for i in 0..weekday.day_in_week {
+            vec.push("  ".to_string());
+        }
+        vec.push(format!("{:2}", weekday.day));
     } else {
-        args.year
-    };
-    let month = get_month(args.month, current_month);
+        vec.push(format!("{:2}", weekday.day));
+    }
+}
 
+fn complete_vec(vec: &mut Vec<String>) {
+    let missing_days = 7 - vec.len();
+    for _ in 0..missing_days {
+        vec.push("  ".to_string());
+    }
+}
+
+fn month_header(month: u32, year: i32, endl: bool) {
     let month_as_string = match month {
         1 => "January",
         2 => "February",
@@ -96,48 +104,120 @@ fn run(args: Args) -> Result<()> {
     };
 
     let header = center_text(&format!("{} {}", month_as_string, year));
+    if endl {
+        println!("{}", header);
+    } else {
+        print!("{}", header);
+    }
+}
 
-    println!("{}", header);
-    println!("Su Mo Tu We Th Fr Sa  ");
+fn print_vec(vec: &Vec<String>, endl: bool) {
+    if endl {
+        println!("{}  ", vec.join(" "));
+    } else {
+        print!("{}  ", vec.join(" "));
+    }
+}
+
+fn print_padding(endl: bool) {
+    let padding = " ".repeat(LINE_LENGTH);
+    if endl {
+        println!("{}", padding);
+    } else {
+        print!("{}", padding);
+    }
+}
+
+fn get_weekday(year: i32, month: u32, day: i64) -> WkDay {
+    let date = NaiveDate::from_ymd_opt(year, month, day as u32).unwrap();
+
+    let weekday = match date.weekday() {
+        Weekday::Sun => WkDay {
+            day_in_week: 0,
+            day: day,
+        },
+        Weekday::Mon => WkDay {
+            day_in_week: 1,
+            day: day,
+        },
+        Weekday::Tue => WkDay {
+            day_in_week: 2,
+            day: day,
+        },
+        Weekday::Wed => WkDay {
+            day_in_week: 3,
+            day: day,
+        },
+        Weekday::Thu => WkDay {
+            day_in_week: 4,
+            day: day,
+        },
+        Weekday::Fri => WkDay {
+            day_in_week: 5,
+            day: day,
+        },
+        Weekday::Sat => WkDay {
+            day_in_week: 6,
+            day: day,
+        },
+    };
+
+    weekday
+}
+
+struct WkDay {
+    day_in_week: i64,
+    day: i64,
+}
+
+fn run(args: Args) -> Result<()> {
+    let current_year = Local::now().year();
+    let current_month = Local::now().month();
+    let month = get_month(args.month, current_month);
+
+    if !(0 < month && month <= 12) {
+        return Err(anyhow::anyhow!(
+            "month \"{}\" not in the range 1 through 12",
+            month
+        ));
+    }
+
+    if !(0 < args.year && args.year <= 9999) {
+        return Err(anyhow::anyhow!(
+            "error: invalid value \'{}\' for '[YEAR]': {} is not in 1..=9999",
+            args.year,
+            args.year
+        ));
+    }
+
+    let year = if args.year == 0 {
+        current_year
+    } else {
+        args.year
+    };
 
     let days_in_month = days_in_month(year, month)?;
+
+    month_header(month, year, true);
+    day_headers(true);
     let mut vec = vec![];
     for day in 1..=days_in_month {
-        let date = NaiveDate::from_ymd_opt(year, month, day as u32).unwrap();
-        let weekday = match date.weekday() {
-            Weekday::Sun => WkDay{day_in_week: 0, day: day},
-            Weekday::Mon => WkDay{day_in_week: 1, day: day},
-            Weekday::Tue => WkDay{day_in_week: 2, day: day},
-            Weekday::Wed => WkDay{day_in_week: 3, day: day},
-            Weekday::Thu => WkDay{day_in_week: 4, day: day},
-            Weekday::Fri => WkDay{day_in_week: 5, day: day},
-            Weekday::Sat => WkDay{day_in_week: 6, day: day},
-        };
+        let weekday = get_weekday(year, month, day);
 
-        if vec.is_empty() {
-            for i in 0..weekday.day_in_week {
-                vec.push("  ".to_string());
-            }
-            vec.push(format!("{:2}", weekday.day));
-        } else {
-            vec.push(format!("{:2}", weekday.day).as_str().to_string());
-        }
+        add_day_to_vec(&mut vec, weekday);
 
         if vec.len() == 7 {
-            println!("{}  ", vec.join(" "));
+            print_vec(&vec, true);
             vec.clear();
         }
     }
 
     if !vec.is_empty() {
-        let missing_days = 7 - vec.len();
-        for _ in 0..missing_days {
-            vec.push("  ".to_string());
-        }
-        println!("{}  ", vec.join(" "));
+        complete_vec(&mut vec);
+        print_vec(&vec, true);
     }
-    let padding_bottom = " ".repeat(LINE_LENGTH);
-    println!("{}", padding_bottom);
+
+    print_padding(true);
     Ok(())
 }
 
