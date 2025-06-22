@@ -221,82 +221,111 @@ fn run(args: Args) -> Result<()> {
         print_padding(true);
     } else if args.show_year || args.year != 0 {
         let header = center_text(&format!("{}  ", year), (3 * LINE_LENGTH) - 2);
-        println!("{}", header);
+        println!("{}  ", header);
 
-        let month_vec = vec![1, 2, 3];
+        let calendar_layout = vec![
+            vec![1, 2, 3],
+            vec![4, 5, 6],
+            vec![7, 8, 9],
+            vec![10, 11, 12],
+        ];
 
-        for month in &month_vec {
-            let end_line = month % 3 == 0;
-            month_header(year, *month, false, end_line);
-        }
-        for month in &month_vec {
-            let end_line = month % 3 == 0;
-            day_headers(end_line);
-        }
+        for (idx, month_vec) in calendar_layout.iter().enumerate() {
+            for month in month_vec {
+                let end_line = month % 3 == 0;
+                month_header(year, *month, false, end_line);
+            }
+            for month in month_vec {
+                let end_line = month % 3 == 0;
+                day_headers(end_line);
+            }
 
-        let mut vec = vec![];
+            let mut vec = vec![];
 
-        let days_in_months = month_vec
-            .iter()
-            .map(|month| days_in_month(year, *month))
-            .collect::<Vec<_>>();
+            let days_in_months = month_vec
+                .iter()
+                .map(|month| days_in_month(year, *month))
+                .collect::<Vec<_>>();
 
-        let dm1 = days_in_months[0];
-        let dm2 = days_in_months[1];
-        let dm3 = days_in_months[2];
-        let mut cdm1 = 1;
-        let mut cdm2 = 1;
-        let mut cdm3 = 1;
-        while cdm1 <= dm1 || cdm2 <= dm2 || cdm3 <= dm3 {
-            for _ in cdm1..=dm1 {
-                let weekday = get_weekday(year, 1, cdm1);
-                cdm1 += 1;
-                add_day_to_vec(&mut vec, weekday);
-                if vec.len() == 7 {
-                    print_vec(&vec, false);
-                    vec.clear();
-                    break;
+            let dm1 = days_in_months[0];
+            let dm2 = days_in_months[1];
+            let dm3 = days_in_months[2];
+            let mut cdm1 = 1;
+            let mut cdm2 = 1;
+            let mut cdm3 = 1;
+            let mut weeks_printed = 0;
+            while cdm1 <= dm1 || cdm2 <= dm2 || cdm3 <= dm3 {
+                weeks_printed += 1;
+                if cdm1 <= dm1 {
+                    for _ in cdm1..=dm1 {
+                        let weekday = get_weekday(year, month_vec[0], cdm1);
+                        cdm1 += 1;
+                        add_day_to_vec(&mut vec, weekday);
+                        if vec.len() == 7 {
+                            print_vec(&vec, false);
+                            vec.clear();
+                            break;
+                        }
+                    }
+
+                    if !vec.is_empty() {
+                        complete_vec(&mut vec);
+                        print_vec(&vec, false);
+                        vec.clear();
+                    }
+                } else {
+                    print_padding(false);
+                }
+
+                if cdm2 <= dm2 {
+                    for _ in cdm2..=dm2 {
+                        let weekday = get_weekday(year, month_vec[1], cdm2);
+                        cdm2 += 1;
+                        add_day_to_vec(&mut vec, weekday);
+                        if vec.len() == 7 {
+                            print_vec(&vec, false);
+                            vec.clear();
+                            break;
+                        }
+                    }
+
+                    if !vec.is_empty() {
+                        complete_vec(&mut vec);
+                        print_vec(&vec, false);
+                        vec.clear();
+                    }
+                } else {
+                    print_padding(false);
+                }
+
+                if cdm3 <= dm3 {
+                    for _ in cdm3..=dm3 {
+                        let weekday = get_weekday(year, month_vec[2], cdm3);
+                        cdm3 += 1;
+                        add_day_to_vec(&mut vec, weekday);
+                        if vec.len() == 7 {
+                            print_vec(&vec, true);
+                            vec.clear();
+                            break;
+                        }
+                    }
+
+                    if !vec.is_empty() {
+                        complete_vec(&mut vec);
+                        print_vec(&vec, true);
+                        vec.clear();
+                    }
+                } else {
+                    print_padding(true);
                 }
             }
-
-            if !vec.is_empty() {
-                complete_vec(&mut vec);
-                print_vec(&vec, false);
-                vec.clear();
+            if weeks_printed < 6 {
+                print_padding(false);
+                print_padding(false);
+                print_padding(true);
             }
-
-            for _ in cdm2..=dm2 {
-                let weekday = get_weekday(year, 2, cdm2);
-                cdm2 += 1;
-                add_day_to_vec(&mut vec, weekday);
-                if vec.len() == 7 {
-                    print_vec(&vec, false);
-                    vec.clear();
-                    break;
-                }
-            }
-
-            if !vec.is_empty() {
-                complete_vec(&mut vec);
-                print_vec(&vec, false);
-                vec.clear();
-            }
-
-            for _ in cdm3..=dm3 {
-                let weekday = get_weekday(year, 3, cdm3);
-                cdm3 += 1;
-                add_day_to_vec(&mut vec, weekday);
-                if vec.len() == 7 {
-                    print_vec(&vec, true);
-                    vec.clear();
-                    break;
-                }
-            }
-
-            if !vec.is_empty() {
-                complete_vec(&mut vec);
-                print_vec(&vec, true);
-                vec.clear();
+            if idx < 3 {
+                println!();
             }
         }
     }
