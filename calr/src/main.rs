@@ -21,15 +21,14 @@ fn center_text(text: &str, line_length: usize) -> String {
     format!("{}{}{}", padding_left, text, padding_right)
 }
 
-fn days_in_month(year: i32, month: u32) -> Result<i64> {
+fn days_in_month(year: i32, month: u32) -> i64 {
     let start_date = if month == 12 {
-        NaiveDate::from_ymd_opt(year + 1, 1, 1)
+        NaiveDate::from_ymd_opt(year + 1, 1, 1).expect("Invalid date")
     } else {
-        NaiveDate::from_ymd_opt(year, month + 1, 1)
-    }
-    .unwrap();
-    let end_date = NaiveDate::from_ymd_opt(year, month, 1).unwrap();
-    Ok(-1 * end_date.signed_duration_since(start_date).num_days())
+        NaiveDate::from_ymd_opt(year, month + 1, 1).expect("Invalid date")
+    };
+    let end_date = NaiveDate::from_ymd_opt(year, month, 1).expect("Invalid date");
+    -1 * end_date.signed_duration_since(start_date).num_days()
 }
 
 fn get_month(possible_month: &Option<String>, current_month: u32) -> u32 {
@@ -200,7 +199,7 @@ fn run(args: Args) -> Result<()> {
     };
 
     if args.month.is_some() {
-        let days_in_month = days_in_month(year, month)?;
+        let days_in_month = days_in_month(year, month);
 
         month_header(year, month, true, true);
         day_headers(true);
@@ -224,53 +223,80 @@ fn run(args: Args) -> Result<()> {
         let header = center_text(&format!("{}  ", year), (3 * LINE_LENGTH) - 2);
         println!("{}", header);
 
-        for month in 1..=3 {
+        let month_vec = vec![1, 2, 3];
+
+        for month in &month_vec {
             let end_line = month % 3 == 0;
-            month_header(year, month, false, end_line);
+            month_header(year, *month, false, end_line);
         }
-        for month in 1..=3 {
+        for month in &month_vec {
             let end_line = month % 3 == 0;
             day_headers(end_line);
         }
 
         let mut vec = vec![];
-        let dm1 = days_in_month(year, 1)?;
-        let dm2 = days_in_month(year, 2)?;
-        let dm3 = days_in_month(year, 3)?;
+
+        let days_in_months = month_vec
+            .iter()
+            .map(|month| days_in_month(year, *month))
+            .collect::<Vec<_>>();
+
+        let dm1 = days_in_months[0];
+        let dm2 = days_in_months[1];
+        let dm3 = days_in_months[2];
         let mut cdm1 = 1;
         let mut cdm2 = 1;
         let mut cdm3 = 1;
-
-        for _ in cdm1..=dm1 {
-            let weekday = get_weekday(year, 1, cdm1);
-            cdm1 += 1;
-            add_day_to_vec(&mut vec, weekday);
-            if vec.len() == 7 {
-                print_vec(&vec, false);
-                vec.clear();
-                break;
+        while cdm1 <= dm1 || cdm2 <= dm2 || cdm3 <= dm3 {
+            for _ in cdm1..=dm1 {
+                let weekday = get_weekday(year, 1, cdm1);
+                cdm1 += 1;
+                add_day_to_vec(&mut vec, weekday);
+                if vec.len() == 7 {
+                    print_vec(&vec, false);
+                    vec.clear();
+                    break;
+                }
             }
-        }
 
-        for _ in cdm2..=dm2 {
-            let weekday = get_weekday(year, 2, cdm2);
-            cdm2 += 1;
-            add_day_to_vec(&mut vec, weekday);
-            if vec.len() == 7 {
+            if !vec.is_empty() {
+                complete_vec(&mut vec);
                 print_vec(&vec, false);
                 vec.clear();
-                break;
             }
-        }
 
-        for _ in cdm3..=dm3 {
-            let weekday = get_weekday(year, 3, cdm3);
-            cdm3 += 1;
-            add_day_to_vec(&mut vec, weekday);
-            if vec.len() == 7 {
+            for _ in cdm2..=dm2 {
+                let weekday = get_weekday(year, 2, cdm2);
+                cdm2 += 1;
+                add_day_to_vec(&mut vec, weekday);
+                if vec.len() == 7 {
+                    print_vec(&vec, false);
+                    vec.clear();
+                    break;
+                }
+            }
+
+            if !vec.is_empty() {
+                complete_vec(&mut vec);
                 print_vec(&vec, false);
                 vec.clear();
-                break;
+            }
+
+            for _ in cdm3..=dm3 {
+                let weekday = get_weekday(year, 3, cdm3);
+                cdm3 += 1;
+                add_day_to_vec(&mut vec, weekday);
+                if vec.len() == 7 {
+                    print_vec(&vec, true);
+                    vec.clear();
+                    break;
+                }
+            }
+
+            if !vec.is_empty() {
+                complete_vec(&mut vec);
+                print_vec(&vec, true);
+                vec.clear();
             }
         }
     }
