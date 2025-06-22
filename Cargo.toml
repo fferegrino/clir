@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = [
+members = [ "calr",
     "catr",
     "clir", "commr", "cutr", "findr", "grepr",
     "headr", "tailr", "uniqr", "wcr",
