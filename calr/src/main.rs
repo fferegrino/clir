@@ -6,7 +6,7 @@ const LINE_LENGTH: usize = 22;
 
 #[derive(Parser)]
 struct Args {
-    #[arg(value_name = "YEAR", default_value = "0")]
+    #[arg(value_name = "YEAR", default_value = "-1")]
     year: i32,
     #[arg(short('y'), long("year"), conflicts_with = "year")]
     show_year: bool,
@@ -50,7 +50,7 @@ fn get_month(possible_month: &Option<String>, current_month: u32) -> u32 {
                     "october" => 10,
                     "november" => 11,
                     "december" => 12,
-                    _ => current_month,
+                    _ => 0,
                 },
             }
         }
@@ -177,6 +177,12 @@ fn run(args: Args) -> Result<()> {
     let current_month = Local::now().month();
     let month = get_month(&args.month, current_month);
 
+    let year = if args.year == -1 {
+        current_year
+    } else {
+        args.year
+    };
+
     if !(0 < month && month <= 12) {
         return Err(anyhow::anyhow!(
             "month \"{}\" not in the range 1 through 12",
@@ -184,7 +190,7 @@ fn run(args: Args) -> Result<()> {
         ));
     }
 
-    if !(0 < args.year && args.year <= 9999) && !args.show_year {
+    if !(0 < year && year <= 9999) {
         return Err(anyhow::anyhow!(
             "error: invalid value \'{}\' for '[YEAR]': {} is not in 1..=9999",
             args.year,
@@ -192,11 +198,6 @@ fn run(args: Args) -> Result<()> {
         ));
     }
 
-    let year = if args.year == 0 {
-        current_year
-    } else {
-        args.year
-    };
 
     if args.month.is_some() {
         let days_in_month = days_in_month(year, month);
@@ -219,7 +220,7 @@ fn run(args: Args) -> Result<()> {
         }
 
         print_padding(true);
-    } else if args.show_year || args.year != 0 {
+    } else if args.show_year || year != 0 {
         let header = center_text(&format!("{}  ", year), (3 * LINE_LENGTH) - 2);
         println!("{}  ", header);
 
