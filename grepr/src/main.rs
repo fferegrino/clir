@@ -40,10 +40,6 @@ fn print_file_stats(
         line.clear();
     }
 
-    // if matching_lines.is_empty() {
-    //     return Ok(())
-    // }
-
     if show_counts {
         if file_count > 1 {
             println!("{}:{}", file_name, matching_lines.iter().count());
